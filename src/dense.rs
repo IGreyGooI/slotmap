@@ -271,8 +271,8 @@ impl<K: Key, V> DenseSlotMap<K, V> {
     /// assert_eq!(sm[key], (key, 20));
     /// ```
     pub fn insert_with_key<F>(&mut self, f: F) -> K
-    where
-        F: FnOnce(K) -> V,
+        where
+            F: FnOnce(K) -> V,
     {
         if self.len() >= (core::u32::MAX - 1) as usize {
             panic!("DenseSlotMap number of elements overflow");
@@ -380,8 +380,8 @@ impl<K: Key, V> DenseSlotMap<K, V> {
     /// assert_eq!(2, sm.len());
     /// ```
     pub fn retain<F>(&mut self, mut f: F)
-    where
-        F: FnMut(K, &mut V) -> bool,
+        where
+            F: FnMut(K, &mut V) -> bool,
     {
         let mut i = 0;
         while i < self.keys.len() {
@@ -760,6 +760,26 @@ impl<K: Key, V> DenseSlotMap<K, V> {
             inner: self.iter_mut(),
         }
     }
+
+    /// Get values array as a slice
+    pub fn get_value_slice(&self) -> &[V] {
+        self.values.as_slice()
+    }
+
+    /// Get values array as a mutable slice
+    pub fn get_value_slice_mut(&mut self) -> &mut [V] {
+        self.values.as_mut_slice()
+    }
+
+    /// Get keys array as a slice
+    pub fn get_key_slice(&self) -> &[K] {
+        self.keys.as_slice()
+    }
+
+    /// Get keys array as a mutable slice
+    pub fn get_key_slice_mut(&mut self) -> &mut [K] {
+        self.keys.as_mut_slice()
+    }
 }
 
 impl<K: Key, V> Default for DenseSlotMap<K, V> {
@@ -816,11 +836,11 @@ pub struct Iter<'a, K: 'a + Key, V: 'a> {
     inner_values: core::slice::Iter<'a, V>,
 }
 
-impl <'a, K: 'a + Key, V: 'a> Clone for Iter<'a, K, V> {
+impl<'a, K: 'a + Key, V: 'a> Clone for Iter<'a, K, V> {
     fn clone(&self) -> Self {
         Iter {
             inner_keys: self.inner_keys.clone(),
-            inner_values: self.inner_values.clone()
+            inner_values: self.inner_values.clone(),
         }
     }
 }
@@ -842,7 +862,7 @@ pub struct Keys<'a, K: 'a + Key, V> {
     inner: Iter<'a, K, V>,
 }
 
-impl <'a, K: 'a + Key, V: 'a> Clone for Keys<'a, K, V> {
+impl<'a, K: 'a + Key, V: 'a> Clone for Keys<'a, K, V> {
     fn clone(&self) -> Self {
         Keys {
             inner: self.inner.clone()
@@ -858,7 +878,7 @@ pub struct Values<'a, K: 'a + Key, V> {
     inner: Iter<'a, K, V>,
 }
 
-impl <'a, K: 'a + Key, V: 'a> Clone for Values<'a, K, V> {
+impl<'a, K: 'a + Key, V: 'a> Clone for Values<'a, K, V> {
     fn clone(&self) -> Self {
         Values {
             inner: self.inner.clone()
@@ -1026,26 +1046,39 @@ impl<K: Key, V> IntoIterator for DenseSlotMap<K, V> {
 }
 
 impl<'a, K: 'a + Key, V> FusedIterator for Iter<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> FusedIterator for IterMut<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> FusedIterator for Keys<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> FusedIterator for Values<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> FusedIterator for ValuesMut<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> FusedIterator for Drain<'a, K, V> {}
+
 impl<K: Key, V> FusedIterator for IntoIter<K, V> {}
 
 impl<'a, K: 'a + Key, V> ExactSizeIterator for Iter<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> ExactSizeIterator for IterMut<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> ExactSizeIterator for Keys<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> ExactSizeIterator for Values<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> ExactSizeIterator for ValuesMut<'a, K, V> {}
+
 impl<'a, K: 'a + Key, V> ExactSizeIterator for Drain<'a, K, V> {}
+
 impl<K: Key, V> ExactSizeIterator for IntoIter<K, V> {}
 
 // Serialization with serde.
 #[cfg(feature = "serde")]
 mod serialize {
-    use super::*;
     use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::*;
 
     #[derive(Serialize, Deserialize)]
     struct SerdeSlot<T> {
@@ -1055,8 +1088,8 @@ mod serialize {
 
     impl<K: Key, V: Serialize> Serialize for DenseSlotMap<K, V> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+            where
+                S: Serializer,
         {
             let serde_slots: Vec<_> = self
                 .slots
@@ -1076,8 +1109,8 @@ mod serialize {
 
     impl<'de, K: Key, V: Deserialize<'de>> Deserialize<'de> for DenseSlotMap<K, V> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
         {
             let serde_slots: Vec<SerdeSlot<V>> = Deserialize::deserialize(deserializer)?;
             if serde_slots.len() >= u32::max_value() as usize {
@@ -1137,9 +1170,11 @@ mod serialize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use quickcheck::quickcheck;
     use std::collections::{HashMap, HashSet};
+
+    use quickcheck::quickcheck;
+
+    use super::*;
 
     #[derive(Clone)]
     struct CountDrop<'a>(&'a core::cell::RefCell<usize>);
